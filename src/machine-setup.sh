@@ -59,18 +59,8 @@ elif [[ -d /glade ]] ; then
     target=yellowstone
     module purge
 elif [[ -d /lustre && -d /ncrc ]] ; then
-    # We are on GAEA.
-    if ( ! eval module help > /dev/null 2>&1 ) ; then
-        # We cannot simply load the module command.  The GAEA
-        # /etc/profile modifies a number of module-related variables
-        # before loading the module command.  Without those variables,
-        # the module command fails.  Hence we actually have to source
-        # /etc/profile here.
-        echo load the module command 1>&2
-        source /etc/profile
-    fi
+    source /lustre/f2/dev/role.epic/contrib/Lmod_init.sh
     target=gaea
-    module purge
 elif [[ "$(hostname)" =~ "odin" ]]; then
     target="odin"
 else
