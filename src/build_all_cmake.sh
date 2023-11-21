@@ -3,6 +3,9 @@
 set -eux
 source ./machine-setup.sh > /dev/null 2>&1
 
+if [ $target = gaea ]; then
+  source /lustre/f2/dev/role.epic/contrib/Lmod_init.sh
+fi
 
 module use ../modulefiles
 module load $target
@@ -25,7 +28,7 @@ elif [ $target = wcoss2 ] ; then
   export FC=ftn
   export F90=ftn
   export CC=icc
-else
+elif ! [[ $target =~ gaea ]] ; then
   echo "Unknown machine = $target"
   exit 1
 fi
@@ -36,7 +39,7 @@ if [ -d "build" ]; then
 fi
 mkdir build
 cd build
-cmake .. -DCMAKE_Fortran_COMPILER=ifort -DCMAKE_C_COMPILER=icc -DCMAKE_BUILD_TYPE=${BUILD_TYPE}
+cmake .. -DCMAKE_Fortran_COMPILER=$FC -DCMAKE_C_COMPILER=$CC -DCMAKE_BUILD_TYPE=${BUILD_TYPE}
 make -j 8 VERBOSE=1
 make install
 

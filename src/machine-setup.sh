@@ -16,8 +16,17 @@ else
     __ms_shell=sh
 fi
 
+# Note: this script only supports bash on GAEA. That is due to
+# a limitation of GAEA's own system init scripts.
+
 target=""
 USERNAME=`echo $LOGNAME | awk '{ print tolower($0)'}`
+
+# Disable -e (abort on non-zero exit status) -u (abort on empty or
+# uninitialized variables) and -x (print every command executed)
+# because they can break system scripts.
+__ms_set=$-
+set +eux
 
 if [[ -d /lfs4 ]] ; then
     # We are on NOAA Jet
@@ -59,24 +68,33 @@ elif [[ -d /glade ]] ; then
     target=yellowstone
     module purge
 elif [[ -d /lustre && -d /ncrc ]] ; then
-    # We are on GAEA.
-    if ( ! eval module help > /dev/null 2>&1 ) ; then
-        # We cannot simply load the module command.  The GAEA
-        # /etc/profile modifies a number of module-related variables
-        # before loading the module command.  Without those variables,
-        # the module command fails.  Hence we actually have to source
-        # /etc/profile here.
-        echo load the module command 1>&2
-        source /etc/profile
-    fi
-    target=gaea
     module purge
+    # Unset the read-only variables $PELOCAL_PRGENV and $RCLOCAL_PRGENV
+    gdb -ex 'call (int) unbind_variable("PELOCAL_PRGENV")' \
+        -ex 'call (int) unbind_variable("RCLOCAL_PRGENV")' \
+        --pid=$$ --batch
+    
+    # Reload system default modules:
+    source /etc/bash.bashrc.local
+
+    # Also load EPIC's lmod:
+    source /lustre/f2/dev/role.epic/contrib/Lmod_init.sh
+
+    if ( head /proc/cpuinfo | grep EPYC ) ; then
+        target=gaea_c5
+    else
+        target=gaea
+    fi
 elif [[ "$(hostname)" =~ "odin" ]]; then
     target="odin"
 else
     echo WARNING: UNKNOWN PLATFORM 1>&2
 fi
 
+# Restore shell settings
+set -$__ms_set
+
+unset __ms_set
 unset __ms_shell
 unset __ms_ksh_test
 unset __ms_bash_test
